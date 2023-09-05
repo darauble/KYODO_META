@@ -1,0 +1,27 @@
+{
+	"author" : "Darau, Bl\u0117",
+	"author_title" : "Decoder",
+	"furusato" : 919,
+	"kaiun_suisan" : 15774,
+	"kyodo_english" : 6344,
+	"kyodo_japanese" : 40480,
+	"nav_report" : 
+	{
+		"from" : 2835,
+		"to" : 2860
+	},
+	"ocean_conditions" : 1161,
+	"ocean_current" : 
+	{
+		"number" : 34,
+		"year" : 2023
+	},
+	"receivers" : 
+	[
+		"Adelaide",
+		"Japan",
+		"Taiwan",
+		"West Coast US"
+	],
+	"sailor_news" : 1197
+}
