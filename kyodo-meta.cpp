@@ -93,8 +93,7 @@ gboolean isNumeric(const gchar* str) {
     return TRUE;
 }
 
-// Callback function for the "Kyodo News" checkbox
-void onFaxCheckboxToggle(GtkWidget* widget, gpointer data) {
+void processButtons() {
     title = "";
 
     gboolean kyodoChecked = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(kyodoCheckbox));
@@ -224,6 +223,20 @@ void onFaxCheckboxToggle(GtkWidget* widget, gpointer data) {
     gtk_entry_set_text(GTK_ENTRY(titleEntry), title.c_str());
 }
 
+void onFaxEngJapCheckboxToggle(GtkWidget* widget, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+}
+
+void onFaxMorningEveningCheckboxToggle(GtkWidget* widget, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(japaneseRadioButton), TRUE);
+}
+
+// Callback function for the "Kyodo News" checkbox
+void onFaxCheckboxToggle(GtkWidget* widget, gpointer data) {
+    processButtons();
+}
+
 void modalWindow(const gchar *message) {
     GtkWidget* dialog = gtk_message_dialog_new(
         GTK_WINDOW(window),            // Parent window
@@ -283,52 +296,67 @@ void onNumberChanged(GtkEditable* editable, gpointer data, int* number) {
         *number = atoi(text); // Convert the valid text to an integer
     }
 
-    onFaxCheckboxToggle(kyodoCheckbox, data);
+    processButtons();
 }
 // Callback function for the "+" button for English
 void onEnglishIncrementClicked(GtkWidget* widget, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(englishRadioButton), TRUE);
     gtk_entry_set_text(GTK_ENTRY(englishNumberEntry), (std::to_string(++englishNumber)).c_str());
 }
 
 void onEnglishNumberChanged(GtkEditable* editable, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(englishRadioButton), TRUE);
     onNumberChanged(editable, data, &englishNumber);
 }
 
 void onjapaneseIncrementClicked(GtkWidget* widget, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(japaneseRadioButton), TRUE);
     gtk_entry_set_text(GTK_ENTRY(japaneseNumberEntry), (std::to_string(++japaneseNumber)).c_str());
 }
 
 void onJapaneseNumberChanged(GtkEditable* editable, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(japaneseRadioButton), TRUE);
     onNumberChanged(editable, data, &japaneseNumber);
 }
 
 void onfurusatoIncrementClicked(GtkWidget* widget, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(furusatoCheckbox), TRUE);
     gtk_entry_set_text(GTK_ENTRY(furusatoNumberEntry), (std::to_string(++furusatoNumber)).c_str());
 }
 
 void onFurusatoNumberChanged(GtkEditable* editable, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(furusatoCheckbox), TRUE);
     onNumberChanged(editable, data, &furusatoNumber);
 }
 
 void onNavreportMoveClicked(GtkWidget* widget, gpointer data) {
     navreportFromNumber = (++navreportToNumber);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(navreportCheckbox), TRUE);
     gtk_entry_set_text(GTK_ENTRY(navreportFromNumberEntry), (std::to_string(navreportFromNumber)).c_str());
     gtk_entry_set_text(GTK_ENTRY(navreportToNumberEntry), (std::to_string(navreportToNumber)).c_str());
 }
 
 void onNavreportFromNumberChanged(GtkEditable* editable, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(navreportCheckbox), TRUE);
     onNumberChanged(editable, data, &navreportFromNumber);
 }
 
 void onNavreportToNumberChanged(GtkEditable* editable, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(navreportCheckbox), TRUE);
     onNumberChanged(editable, data, &navreportToNumber);
 }
 
 void onKaiunsuisanIncrementClicked(GtkWidget* widget, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kaiunsuisanCheckbox), TRUE);
     gtk_entry_set_text(GTK_ENTRY(kaiunsuisanNumberEntry), (std::to_string(++kaiunsuisanNumber)).c_str());
 }
 
 void onKaiunsuisanNumberChanged(GtkEditable* editable, gpointer data) {
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kaiunsuisanCheckbox), TRUE);
     onNumberChanged(editable, data, &kaiunsuisanNumber);
 }
 
@@ -573,7 +601,7 @@ int main(int argc, char* argv[]) {
 
     // Row 3: Radio Buttons, Labels, Numeric Entry Fields, and "+" Button for English
     englishRadioButton = gtk_radio_button_new_with_label(NULL, "English");
-    g_signal_connect(englishRadioButton, "toggled", G_CALLBACK(onFaxCheckboxToggle), NULL);
+    g_signal_connect(englishRadioButton, "clicked", G_CALLBACK(onFaxEngJapCheckboxToggle), NULL);
     gtk_grid_attach(GTK_GRID(grid), englishRadioButton, 0, row, 1, 1);
 
     englishNumberEntry = gtk_entry_new();
@@ -602,7 +630,7 @@ int main(int argc, char* argv[]) {
     gtk_grid_attach(GTK_GRID(grid), japaneseIncrementButton, 2, row++, 1, 1);
 
     morningRadioButton = gtk_radio_button_new_with_label(NULL, "Morning");
-    g_signal_connect(morningRadioButton, "toggled", G_CALLBACK(onFaxCheckboxToggle), NULL);
+    g_signal_connect(morningRadioButton, "clicked", G_CALLBACK(onFaxMorningEveningCheckboxToggle), NULL);
     gtk_grid_attach(GTK_GRID(grid), morningRadioButton, 1, row++, 1, 1);
 
     eveningRadioButton = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(morningRadioButton), "Evening");
