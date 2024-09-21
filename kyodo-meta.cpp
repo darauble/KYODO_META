@@ -2,6 +2,7 @@
 #include <json/json.h>
 #include <exiv2/exiv2.hpp>
 #include <fstream>
+#include <filesystem>
 #include <string>
 
 #include "icon.xpm"
@@ -142,13 +143,17 @@ void processButtons() {
             title += ", ";
         }
 
+        char buf[6];
+
         title += gtk_button_get_label(GTK_BUTTON(navreportCheckbox));
         title += " ";
-        title += std::to_string(navreportFromNumber);
+        snprintf(buf, 6, "%04d", navreportFromNumber);
+        title += buf;
 
         if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(navreportToCheckbox))) {
             title += "-";
-            title += std::to_string(navreportToNumber);
+            snprintf(buf, 6, "%04d", navreportToNumber);
+            title += buf;
         }
     }
 
@@ -225,11 +230,13 @@ void processButtons() {
 
 void onFaxEngJapCheckboxToggle(GtkWidget* widget, gpointer data) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
+    processButtons();
 }
 
 void onFaxMorningEveningCheckboxToggle(GtkWidget* widget, gpointer data) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(kyodoCheckbox), TRUE);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(japaneseRadioButton), TRUE);
+    processButtons();
 }
 
 // Callback function for the "Kyodo News" checkbox
@@ -257,8 +264,54 @@ void modalWindow(const gchar *message) {
     gtk_widget_destroy(dialog);
 }
 
+void saveToJson() {
+    Json::Value jsonData;
+    std::ifstream file("kyodo-meta.json");
+    
+    if (file.is_open()) {
+        file >> jsonData;
+        file.close();
+    } else {
+        g_print("Error: Failed to load the JSON file before saving.\n");
+    }
+
+    jsonData["kyodo_english"] = englishNumber;
+    jsonData["kyodo_japanese"] = japaneseNumber;
+    jsonData["furusato"] = furusatoNumber;
+    jsonData["kaiun_suisan"] = kaiunsuisanNumber;
+    jsonData["sailor_news"] = sailorNumber;
+    jsonData["ocean_conditions"] = oceanconditionsNumber;
+
+    Json::Value navreportData;
+    navreportData["from"] = navreportFromNumber;
+    navreportData["to"] = navreportToNumber;
+    jsonData["nav_report"] = navreportData;
+
+    Json::Value oceancurrentData;
+    oceancurrentData["year"] = oceancurrentYear;
+    oceancurrentData["number"] = oceancurrentNumber;
+    jsonData["ocean_current"] = oceancurrentData;
+
+    jsonData["author"] = author;
+    jsonData["author_title"] = authorTitle;
+
+    std::ofstream outFile("kyodo-meta.json");
+    
+    if (outFile.is_open()) {
+        outFile << jsonData;
+        outFile.close();
+    } else {
+        g_print("Error: Failed to save metadata to JSON file.\n");
+    }
+}
+
 void onSaveMetadataClicked(GtkWidget* widget, gpointer data) {
     const gchar* imagePath = gtk_entry_get_text(GTK_ENTRY(imagePathEntry));
+
+    if (!std::filesystem::exists(imagePath)) {
+        modalWindow("Error: Invalid image path!");
+        return;
+    }
 
     Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(imagePath);
 
@@ -284,6 +337,8 @@ void onSaveMetadataClicked(GtkWidget* widget, gpointer data) {
 
     image->setXmpData(xmpData);
     image->writeMetadata();
+
+    saveToJson();
 
     modalWindow("Metadata saved to the image!");
 }
@@ -511,51 +566,15 @@ void loadFromJson() {
     }
 }
 
-void saveToJson() {
-    Json::Value jsonData;
-    std::ifstream file("kyodo-meta.json");
-    
-    if (file.is_open()) {
-        file >> jsonData;
-        file.close();
-    } else {
-        g_print("Error: Failed to load the JSON file before saving.\n");
-    }
-
-    jsonData["kyodo_english"] = englishNumber;
-    jsonData["kyodo_japanese"] = japaneseNumber;
-    jsonData["furusato"] = furusatoNumber;
-    jsonData["kaiun_suisan"] = kaiunsuisanNumber;
-    jsonData["sailor_news"] = sailorNumber;
-    jsonData["ocean_conditions"] = oceanconditionsNumber;
-
-    Json::Value navreportData;
-    navreportData["from"] = navreportFromNumber;
-    navreportData["to"] = navreportToNumber;
-    jsonData["nav_report"] = navreportData;
-
-    Json::Value oceancurrentData;
-    oceancurrentData["year"] = oceancurrentYear;
-    oceancurrentData["number"] = oceancurrentNumber;
-    jsonData["ocean_current"] = oceancurrentData;
-
-    jsonData["author"] = author;
-    jsonData["author_title"] = authorTitle;
-
-    std::ofstream outFile("kyodo-meta.json");
-    
-    if (outFile.is_open()) {
-        outFile << jsonData;
-        outFile.close();
-    } else {
-        g_print("Error: Failed to save metadata to JSON file.\n");
-    }
+static void quit_cb(GtkWidget *widget, gpointer data) {
+    gtk_main_quit();
 }
 
 int main(int argc, char* argv[]) {
     GtkWidget* vbox;
     GtkWidget* browseButton;
     GtkWidget* grid;
+    GtkAccelGroup *accel_group;
 
     gtk_init(&argc, &argv);
 
@@ -564,6 +583,11 @@ int main(int argc, char* argv[]) {
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Kyodo News Metadata Editor");
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    accel_group = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
+    gtk_accel_group_connect(accel_group, GDK_KEY_q, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, 
+                            g_cclosure_new_swap(G_CALLBACK(quit_cb), NULL, NULL));
 
     GdkPixbuf* icon = gdk_pixbuf_new_from_xpm_data(icon_png);
     
@@ -617,6 +641,7 @@ int main(int argc, char* argv[]) {
     japaneseRadioButton = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(englishRadioButton), "Japanese");
     // No need to attach signal, as the second radio button is attached to the first one!
     // g_signal_connect(japaneseRadioButton, "toggled", G_CALLBACK(onFaxCheckboxToggle), NULL);
+    g_signal_connect(japaneseRadioButton, "clicked", G_CALLBACK(onFaxEngJapCheckboxToggle), NULL);
     gtk_grid_attach(GTK_GRID(grid), japaneseRadioButton, 0, row, 1, 1);
 
     japaneseNumberEntry = gtk_entry_new();
@@ -634,6 +659,7 @@ int main(int argc, char* argv[]) {
     gtk_grid_attach(GTK_GRID(grid), morningRadioButton, 1, row++, 1, 1);
 
     eveningRadioButton = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(morningRadioButton), "Evening");
+    g_signal_connect(eveningRadioButton, "clicked", G_CALLBACK(onFaxMorningEveningCheckboxToggle), NULL);
     // g_signal_connect(eveningRadioButton, "toggled", G_CALLBACK(onFaxCheckboxToggle), NULL);
     gtk_grid_attach(GTK_GRID(grid), eveningRadioButton, 1, row++, 1, 1);
 
