@@ -588,6 +588,13 @@ int main(int argc, char* argv[]) {
     gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
     gtk_accel_group_connect(accel_group, GDK_KEY_q, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, 
                             g_cclosure_new_swap(G_CALLBACK(quit_cb), NULL, NULL));
+    
+    gtk_accel_group_connect(accel_group, GDK_KEY_o, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE,
+        g_cclosure_new_swap(G_CALLBACK(onBrowse), window, NULL));
+
+    gtk_accel_group_connect(accel_group, GDK_KEY_s, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE,
+        g_cclosure_new_swap(G_CALLBACK(onSaveMetadataClicked), NULL, NULL));
+
 
     GdkPixbuf* icon = gdk_pixbuf_new_from_xpm_data(icon_png);
     
